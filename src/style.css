@@ -580,6 +580,7 @@ html.dark .marker-pin { border-color: var(--color-surface); }
     align-items: center;
 }
 .password-wrapper input {
+    width: 100%;
     padding-right: 40px; /* space for icon */
 }
 .password-toggle {
@@ -598,15 +599,33 @@ html.dark .marker-pin { border-color: var(--color-surface); }
     z-index: 10;
 }
 .password-toggle:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
     background: transparent;
 }
-.password-toggle i {
+.password-toggle svg {
     width: 20px !important;
     height: 20px !important;
 }
-.password-toggle:hover {
-    color: var(--color-text);
+
+/* Modal Overlay */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Modal specific styles */

@@ -14,7 +14,7 @@ async function traccarFetch(endpoint, options = {}) {
         credentials: 'include',
     };
     
-    if (options.body && typeof options.body === 'object' && !(options.body instanceof URLSearchParams)) {
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof URLSearchParams) && !(options.body instanceof Blob) && !(options.body instanceof FormData)) {
         fetchOptions.headers = {
             'Content-Type': 'application/json',
             ...options.headers

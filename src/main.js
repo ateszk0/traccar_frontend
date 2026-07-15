@@ -79,6 +79,9 @@ async function initializeApp() {
 
     profileBtn.addEventListener('click', openProfileModal);
     closeProfileBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+    profileModal.addEventListener('click', (e) => {
+        if (e.target === profileModal) profileModal.classList.add('hidden');
+    });
 
     profileAvatar.addEventListener('click', () => {
         profileAvatarUpload.click();

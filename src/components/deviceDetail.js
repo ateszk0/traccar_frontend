@@ -276,6 +276,9 @@ export function initDeviceDetail() {
     closeNavModal.addEventListener('click', () => {
         navModal.classList.add('hidden');
     });
+    navModal.addEventListener('click', (e) => {
+        if (e.target === navModal) navModal.classList.add('hidden');
+    });
 }
 function renderExtraInfo(device, position) {
     let rows = [];
