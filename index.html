@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Traccar+</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Login View -->
+        <div id="login-view" class="view hidden">
+            <div class="login-card">
+                <div class="logo">
+                    <i data-lucide="map-pin"></i>
+                    <h2>Traccar+</h2>
+                </div>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="email">Email / Felhasználónév</label>
+                        <input type="text" id="email" required placeholder="admin@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Jelszó</label>
+                        <input type="password" id="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Bejelentkezés</button>
+                    <div id="login-error" class="error-text hidden">Sikertelen bejelentkezés</div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main View -->
+        <div id="main-view" class="view hidden">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Eszközök</h2>
+                    <button id="request-all-btn" class="icon-btn" title="Pozíciók lekérése mindenkitől">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                    <button id="theme-toggle" class="icon-btn" title="Téma váltása">
+                        <i data-lucide="moon"></i>
+                    </button>
+                    <button id="logout-btn" class="icon-btn" title="Kijelentkezés">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+                <div id="device-list" class="device-list">
+                    <!-- Device cards will be injected here -->
+                    <div class="loading-state">Betöltés...</div>
+                </div>
+            </aside>
+
+            <!-- Map Container -->
+            <main id="map-container" class="map-container">
+                <div id="map"></div>
+
+                <!-- Floating Action Button for My Location -->
+                <button id="btn-my-location" class="fab-btn" title="Saját helyzetem">
+                    <i data-lucide="navigation"></i>
+                </button>
+
+                <!-- Overlay Panels -->
+                <div id="device-detail" class="detail-panel hidden">
+                    <button class="close-btn" id="close-detail">
+                        <i data-lucide="x"></i>
+                    </button>
+                    <div class="detail-header">
+                        <div class="avatar large avatar-uploadable" id="detail-avatar"
+                            title="Kattints a profilkép módosításához">U</div>
+                        <input type="file" id="avatar-upload" accept="image/*" class="hidden">
+                        <div class="detail-title">
+                            <h3 id="detail-name">User Name</h3>
+                            <span id="detail-status" class="status-badge">Online</span>
+                        </div>
+                    </div>
+                    <div class="detail-stats">
+                        <div class="stat-item">
+                            <i data-lucide="activity"></i>
+                            <span id="detail-speed">0 km/h</span>
+                        </div>
+                        <div class="stat-item">
+                            <i data-lucide="battery"></i>
+                            <span id="detail-battery">- %</span>
+                        </div>
+                        <div class="stat-item">
+                            <i data-lucide="clock"></i>
+                            <span id="detail-time">0 perce</span>
+                        </div>
+                    </div>
+                    <div class="detail-address" id="detail-address">
+                        <i data-lucide="map-pin"></i>
+                        <span>Cím keresése...</span>
+                    </div>
+
+                    <div class="detail-extra-info" id="detail-extra-info">
+                        <!-- Extra info (e.g. distance, motion, contact) will be injected here -->
+                    </div>
+
+                    <div class="detail-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <select id="history-interval" class="history-select"
+                            style="flex: 1; border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 0.5rem; background: var(--color-bg); color: var(--color-text);">
+                            <option value="today">Ma</option>
+                            <option value="yesterday">Tegnap</option>
+                            <option value="last24">Elmúlt 24 óra</option>
+                            <option value="last3days">Elmúlt 3 nap</option>
+                            <option value="lastweek">Elmúlt 1 hét</option>
+                        </select>
+                        <button class="btn btn-secondary" id="btn-replay" style="flex: 1;">
+                            <i data-lucide="history"></i> Betöltés
+                        </button>
+                    </div>
+                    <div class="detail-actions" style="margin-top: 0.5rem;">
+                        <button class="btn btn-primary w-full" id="btn-request-single">
+                            <i data-lucide="refresh-cw"></i> Friss pozíció lekérése
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- App Entry Point -->
+    <script type="module" src="src/main.js"></script>
+</body>
+
+</html>
