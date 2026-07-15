@@ -62,14 +62,10 @@ async function initializeApp() {
             profileName.textContent = user.name || 'Ismeretlen';
             profileEmail.textContent = user.email || user.emailAddress || '';
             
-            // Local frontend-only avatar
-            const localAvatarKey = `traccar_frontend_avatar_${user.email || user.id}`;
-            const localImgUrl = localStorage.getItem(localAvatarKey);
-            
+            // Server-side avatar from user attributes
             const fallback = (user.name || 'U').charAt(0).toUpperCase();
-            
-            if (localImgUrl) {
-                profileAvatar.innerHTML = `<img src="${localImgUrl}" alt="${user.name}" onerror="this.outerHTML='${fallback}'">`;
+            if (user.attributes && user.attributes.profileImage) {
+                profileAvatar.innerHTML = `<img src="${user.attributes.profileImage}" alt="${user.name}" onerror="this.outerHTML='${fallback}'">`;
             } else {
                 profileAvatar.textContent = fallback;
             }
@@ -77,6 +73,7 @@ async function initializeApp() {
             profileModal.classList.remove('hidden');
         } catch (e) {
             console.error('Hiba a profil megnyitásakor:', e);
+            alert('Hiba történt a profil megnyitásakor!');
         }
     }
 
@@ -87,6 +84,53 @@ async function initializeApp() {
         profileAvatarUpload.click();
     });
 
+    function resizeImageAndSave(file, user) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = async function() {
+                const maxSide = 480;
+                let width = img.width;
+                let height = img.height;
+                if (width > maxSide || height > maxSide) {
+                    if (width > height) {
+                        height = Math.round(height * (maxSide / width));
+                        width = maxSide;
+                    } else {
+                        width = Math.round(width * (maxSide / height));
+                        height = maxSide;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const base64String = canvas.toDataURL('image/jpeg', 0.85);
+                
+                try {
+                    // Refresh user data first just in case
+                    const currentUser = await api.checkSession();
+                    if (!currentUser.attributes) currentUser.attributes = {};
+                    currentUser.attributes.profileImage = base64String;
+                    
+                    // Upload to Traccar Server
+                    await api.updateUser(currentUser);
+                    store.setUser(currentUser);
+                    
+                    if (window.showToast) window.showToast('Profilkép feltöltve a szerverre (480p)!', 'success');
+                    openProfileModal(); // Refresh UI
+                } catch (apiErr) {
+                    console.error('API hiba a mentésnél:', apiErr);
+                    if (window.showToast) window.showToast('Hiba a szerverre mentés során!', 'warning');
+                    openProfileModal();
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     profileAvatarUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         const user = store.state.user;
@@ -96,16 +140,7 @@ async function initializeApp() {
             profileAvatar.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width: 24px; height: 24px;"></i>';
             lucide.createIcons();
             
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const base64String = event.target.result;
-                const localAvatarKey = `traccar_frontend_avatar_${user.email || user.id}`;
-                localStorage.setItem(localAvatarKey, base64String);
-                
-                if (window.showToast) window.showToast('Profilkép sikeresen frissítve (csak ebben a böngészőben)!', 'success');
-                openProfileModal(); // Refresh UI
-            };
-            reader.readAsDataURL(file);
+            resizeImageAndSave(file, user);
         } catch (err) {
             console.error('Error reading avatar:', err);
             if (window.showToast) window.showToast('Hiba történt a profilkép beállításakor!', 'warning');

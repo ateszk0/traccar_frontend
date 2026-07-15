@@ -65,6 +65,13 @@ export const api = {
         return traccarFetch('/session');
     },
     
+    async updateUser(user) {
+        return traccarFetch(`/users/${user.id}`, {
+            method: 'PUT',
+            body: user
+        });
+    },
+    
     async logout() {
         return traccarFetch('/session', { method: 'DELETE' });
     },
