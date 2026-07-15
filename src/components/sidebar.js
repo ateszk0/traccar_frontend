@@ -44,7 +44,7 @@ function buildDeviceCard(device, position, isSelected) {
         let imgUrl = device.attributes.deviceImage;
         if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
             if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
-            imgUrl = `https://trackdata.atisn.com/api/${imgUrl}`;
+            imgUrl = `/api/${imgUrl}`;
         }
         avatarContent = `<img src="${imgUrl}" alt="${device.name}" onerror="this.outerHTML='${getInitials(device.name)}'">`;
     }

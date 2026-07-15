@@ -30,6 +30,8 @@ async function initializeApp() {
 
     // Logout handler
     document.getElementById('logout-btn').addEventListener('click', async () => {
+        if (!confirm('Biztosan ki akarsz jelentkezni?')) return;
+        
         try {
             await api.logout();
         } catch(e) {
@@ -40,45 +42,84 @@ async function initializeApp() {
         showLoginView();
     });
 
+    // Profile Modal
+    const profileBtn = document.getElementById('profile-btn');
+    const profileModal = document.getElementById('profile-modal');
+    const closeProfileBtn = document.getElementById('close-profile');
+    const profileAvatar = document.getElementById('profile-avatar');
+    const profileAvatarUpload = document.getElementById('profile-avatar-upload');
+    const profileName = document.getElementById('profile-name');
+    const profileEmail = document.getElementById('profile-email');
+
+    function openProfileModal() {
+        const user = store.state.user;
+        if (!user) return;
+        
+        profileName.textContent = user.name;
+        profileEmail.textContent = user.email || user.emailAddress || '';
+        
+        // Find matching device to show avatar
+        const myDevice = Object.values(store.state.devices).find(d => d.name === user.name);
+        if (myDevice && myDevice.attributes && myDevice.attributes.deviceImage) {
+            let imgUrl = myDevice.attributes.deviceImage;
+            if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+                if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
+                imgUrl = `/api/${imgUrl}`;
+            }
+            profileAvatar.innerHTML = `<img src="${imgUrl}" alt="${user.name}" onerror="this.outerHTML='${user.name.charAt(0).toUpperCase()}'">`;
+        } else {
+            profileAvatar.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+        }
+        
+        profileModal.classList.remove('hidden');
+    }
+
+    profileBtn.addEventListener('click', openProfileModal);
+    closeProfileBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+
+    profileAvatar.addEventListener('click', () => {
+        profileAvatarUpload.click();
+    });
+
+    profileAvatarUpload.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const user = store.state.user;
+        if (!file || !user) return;
+        
+        const myDevice = Object.values(store.state.devices).find(d => d.name === user.name);
+        if (!myDevice) {
+            showToast('Nincs saját eszközöd beállítva. Kérj meg egy admint, hogy hozzon létre eszközt a neveddel!', 'warning');
+            return;
+        }
+        
+        try {
+            profileAvatar.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width: 24px; height: 24px;"></i>';
+            lucide.createIcons();
+            
+            await api.uploadDeviceImage(myDevice.id, file);
+            if (window.showToast) window.showToast('Profilkép sikeresen frissítve!', 'success');
+            
+            // Refresh devices
+            const devices = await api.getDevices();
+            if (devices) {
+                store.setDevices(devices);
+                openProfileModal(); // Refresh modal UI
+            }
+        } catch (err) {
+            console.error('Error uploading avatar:', err);
+            if (window.showToast) window.showToast('Hiba történt a profilkép feltöltésekor!', 'warning');
+            openProfileModal(); // Reset modal UI
+        } finally {
+            profileAvatarUpload.value = '';
+        }
+    });
+
     // Initialize Components
     initLogin(onLoginSuccess);
     initMap();
     initSidebar();
     initDeviceDetail();
     
-    // Request All Positions FAB/Header Button
-    const requestAllBtn = document.getElementById('request-all-btn');
-    requestAllBtn.addEventListener('click', async () => {
-        const devices = Object.values(store.state.devices);
-        if (devices.length === 0) return;
-        
-        try {
-            requestAllBtn.querySelector('i').classList.add('animate-spin');
-            
-            // Loop through all devices and send command
-            const promises = devices.map(async (device) => {
-                try {
-                    await api.sendCommand(device.id, 'positionSingle');
-                    return { name: device.name, success: true };
-                } catch (e) {
-                    console.warn(`Could not send command to ${device.name}`, e);
-                    return { name: device.name, success: false };
-                }
-            });
-            
-            const results = await Promise.all(promises);
-            const successCount = results.filter(r => r.success).length;
-            
-            showToast(`${successCount} eszköznek sikeresen elküldve a frissítési parancs!`, 'success');
-        } catch (e) {
-            console.error('Error requesting all positions', e);
-            showToast('Hiba történt a pozíciók lekérésekor.', 'warning');
-        } finally {
-            setTimeout(() => {
-                requestAllBtn.querySelector('i').classList.remove('animate-spin');
-            }, 1000);
-        }
-    });
     
     // My Location FAB
     document.getElementById('btn-my-location').addEventListener('click', () => {

@@ -15,6 +15,8 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <!-- App CSS -->
     <link rel="stylesheet" href="src/style.css">
@@ -32,11 +34,16 @@
                 <form id="login-form">
                     <div class="input-group">
                         <label for="email">Email / Felhasználónév</label>
-                        <input type="text" id="email" required placeholder="admin@example.com">
+                        <input type="text" id="email" required minlength="3" maxlength="100" placeholder="admin@example.com" autocomplete="username">
                     </div>
                     <div class="input-group">
                         <label for="password">Jelszó</label>
-                        <input type="password" id="password" required placeholder="••••••••">
+                        <div class="password-wrapper">
+                            <input type="password" id="password" required minlength="4" maxlength="100" placeholder="••••••••" autocomplete="current-password">
+                            <button type="button" id="toggle-password" class="icon-btn password-toggle" tabindex="-1" title="Jelszó mutatása/elrejtése">
+                                <i data-lucide="eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Bejelentkezés</button>
                     <div id="login-error" class="error-text hidden">Sikertelen bejelentkezés</div>
@@ -50,8 +57,8 @@
             <aside id="sidebar" class="sidebar">
                 <div class="sidebar-header">
                     <h2>Eszközök</h2>
-                    <button id="request-all-btn" class="icon-btn" title="Pozíciók lekérése mindenkitől">
-                        <i data-lucide="refresh-cw"></i>
+                    <button id="profile-btn" class="icon-btn" title="Profil szerkesztése">
+                        <i data-lucide="user"></i>
                     </button>
                     <button id="theme-toggle" class="icon-btn" title="Téma váltása">
                         <i data-lucide="moon"></i>
@@ -125,9 +132,12 @@
                             <i data-lucide="history"></i> Betöltés
                         </button>
                     </div>
-                    <div class="detail-actions" style="margin-top: 0.5rem;">
-                        <button class="btn btn-primary w-full" id="btn-request-single">
-                            <i data-lucide="refresh-cw"></i> Friss pozíció lekérése
+                    <div class="detail-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary" id="btn-request-single" style="flex: 1;">
+                            <i data-lucide="refresh-cw"></i> Frissítés
+                        </button>
+                        <button class="btn btn-secondary" id="btn-navigate" style="flex: 1;">
+                            <i data-lucide="navigation"></i> Útvonal
                         </button>
                     </div>
                 </div>
@@ -138,9 +148,55 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Profil szerkesztése</h2>
+                <button class="close-btn" id="close-profile">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-avatar-container">
+                    <div class="avatar large avatar-uploadable" id="profile-avatar" title="Kattints a profilkép módosításához">U</div>
+                    <input type="file" id="profile-avatar-upload" accept="image/*" class="hidden">
+                </div>
+                <div class="profile-info">
+                    <h3 id="profile-name">User Name</h3>
+                    <p id="profile-email">email@example.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Modal -->
+    <div id="navigation-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 300px;">
+            <div class="modal-header">
+                <h2>Útvonaltervezés</h2>
+                <button class="close-btn" id="close-navigation">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="#" id="nav-google" class="btn btn-secondary w-full" target="_blank" style="justify-content: center;">
+                    Google Maps
+                </a>
+                <a href="#" id="nav-waze" class="btn btn-secondary w-full" target="_blank" style="justify-content: center;">
+                    Waze
+                </a>
+                <a href="#" id="nav-apple" class="btn btn-secondary w-full" target="_blank" style="justify-content: center;">
+                    Apple Maps
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>

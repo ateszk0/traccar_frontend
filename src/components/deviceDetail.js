@@ -21,9 +21,38 @@ export function initDeviceDetail() {
     const avatarUpload = document.getElementById('avatar-upload');
     
     let isRequestSingleLoading = false;
+    let cooldownTimer = null;
+    const COOLDOWN_MS = 60000;
+
+    function updateRequestButtonState() {
+        const lastRequest = parseInt(localStorage.getItem('lastPositionRequestTime') || '0', 10);
+        const elapsed = Date.now() - lastRequest;
+        
+        if (elapsed < COOLDOWN_MS) {
+            const remaining = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+            requestSingleBtn.disabled = true;
+            requestSingleBtn.innerHTML = `<i data-lucide="clock"></i> Várj ${remaining}s...`;
+            lucide.createIcons();
+            
+            if (!cooldownTimer) {
+                cooldownTimer = setInterval(updateRequestButtonState, 1000);
+            }
+        } else {
+            requestSingleBtn.disabled = false;
+            requestSingleBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Friss pozíció lekérése';
+            lucide.createIcons();
+            if (cooldownTimer) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+            }
+        }
+    }
+    
+    updateRequestButtonState();
+
     requestSingleBtn.addEventListener('click', async () => {
         const id = store.state.selectedDeviceId;
-        if (!id || isRequestSingleLoading) return;
+        if (!id || isRequestSingleLoading || requestSingleBtn.disabled) return;
         
         try {
             isRequestSingleLoading = true;
@@ -35,6 +64,8 @@ export function initDeviceDetail() {
             if (window.showToast) {
                 window.showToast('Pozíciólekérési parancs elküldve!', 'success');
             }
+            
+            localStorage.setItem('lastPositionRequestTime', Date.now().toString());
         } catch (e) {
             console.error('Error sending command', e);
             if (window.showToast) {
@@ -42,8 +73,7 @@ export function initDeviceDetail() {
             }
         } finally {
             isRequestSingleLoading = false;
-            requestSingleBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Friss pozíció lekérése';
-            lucide.createIcons();
+            updateRequestButtonState();
         }
     });
     
@@ -51,15 +81,13 @@ export function initDeviceDetail() {
         const id = store.state.selectedDeviceId;
         if (!id || !store.state.user) return;
         
-        const device = store.state.devices[id];
         const user = store.state.user;
         
-        // Permission check: admin can edit anyone, user can only edit their own device
-        if (!user.administrator && device.name !== user.name) {
+        // Permission check: ONLY admin can edit device avatar from the detail panel
+        // Regular users must use the Profile tab for their own device.
+        if (!user.administrator) {
             if (window.showToast) {
-                window.showToast('Nincs jogosultságod módosítani ezt a képet. Csak a saját eszközeid képét módosíthatod.', 'warning');
-            } else {
-                alert('Nincs jogosultságod módosítani ezt a képet.');
+                window.showToast('Nincs jogosultságod módosítani az eszközképet itt.', 'warning');
             }
             return;
         }
@@ -171,7 +199,7 @@ export function initDeviceDetail() {
             if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
                 // Remove leading slash if present
                 if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
-                imgUrl = `https://trackdata.atisn.com/api/${imgUrl}`;
+                imgUrl = `/api/${imgUrl}`;
             }
             avatar.innerHTML = `<img src="${imgUrl}" alt="${device.name}" onerror="this.outerHTML='${getInitials(device.name)}'">`;
         } else {
@@ -216,8 +244,39 @@ export function initDeviceDetail() {
         
         panel.classList.remove('hidden');
     });
-}
 
+    // Navigation Modal Logic
+    const btnNavigate = document.getElementById('btn-navigate');
+    const navModal = document.getElementById('navigation-modal');
+    const closeNavModal = document.getElementById('close-navigation');
+    const navGoogle = document.getElementById('nav-google');
+    const navWaze = document.getElementById('nav-waze');
+    const navApple = document.getElementById('nav-apple');
+
+    btnNavigate.addEventListener('click', () => {
+        const id = store.state.selectedDeviceId;
+        if (!id) return;
+        
+        const position = store.state.positions[id];
+        if (!position) {
+            if (window.showToast) window.showToast('Nincs ismert pozíció!', 'warning');
+            return;
+        }
+
+        const lat = position.latitude;
+        const lon = position.longitude;
+
+        navGoogle.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+        navWaze.href = `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`;
+        navApple.href = `http://maps.apple.com/?daddr=${lat},${lon}`;
+
+        navModal.classList.remove('hidden');
+    });
+
+    closeNavModal.addEventListener('click', () => {
+        navModal.classList.add('hidden');
+    });
+}
 function renderExtraInfo(device, position) {
     let rows = [];
     
