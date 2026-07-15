@@ -1,4 +1,6 @@
-const BASE_URL = 'https://trackdata.atisn.com/api';
+import store from '../store/state.js';
+
+const BASE_URL = '/api';
 
 /**
  * Standard fetch wrapper for Traccar API

@@ -164,7 +164,7 @@ export function showToast(message, type = 'info') {
     if ('Notification' in window && Notification.permission === 'granted') {
         // Avoid duplicate notifications by checking active document state
         if (document.visibilityState === 'hidden' || type !== 'info') {
-            new Notification('Family Tracker', {
+            new Notification('Traccar+', {
                 body: message,
                 icon: '/favicon.ico' // Or any suitable icon
             });

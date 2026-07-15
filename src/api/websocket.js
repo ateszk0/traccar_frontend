@@ -10,7 +10,8 @@ export function connectWebSocket() {
     }
 
     // Connect to WebSocket using same host as base URL, replace https with wss
-    const wsUrl = 'wss://trackdata.atisn.com/api/socket';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/api/socket`;
     
     console.log('[WebSocket] Connecting to', wsUrl);
     socket = new WebSocket(wsUrl);
