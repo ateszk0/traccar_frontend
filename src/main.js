@@ -52,26 +52,34 @@ async function initializeApp() {
     const profileEmail = document.getElementById('profile-email');
 
     function openProfileModal() {
-        const user = store.state.user;
-        if (!user) return;
-        
-        profileName.textContent = user.name;
-        profileEmail.textContent = user.email || user.emailAddress || '';
-        
-        // Find matching device to show avatar
-        const myDevice = Object.values(store.state.devices).find(d => d.name === user.name);
-        if (myDevice && myDevice.attributes && myDevice.attributes.deviceImage) {
-            let imgUrl = myDevice.attributes.deviceImage;
-            if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
-                if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
-                imgUrl = `/api/${imgUrl}`;
+        try {
+            const user = store.state.user;
+            if (!user) {
+                if (window.showToast) window.showToast('Nincs bejelentkezett felhasználó!', 'warning');
+                return;
             }
-            profileAvatar.innerHTML = `<img src="${imgUrl}" alt="${user.name}" onerror="this.outerHTML='${user.name.charAt(0).toUpperCase()}'">`;
-        } else {
-            profileAvatar.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+            
+            profileName.textContent = user.name || 'Ismeretlen';
+            profileEmail.textContent = user.email || user.emailAddress || '';
+            
+            // Find matching device to show avatar
+            const myDevice = Object.values(store.state.devices || {}).find(d => d.name === user.name);
+            if (myDevice && myDevice.attributes && myDevice.attributes.deviceImage) {
+                let imgUrl = myDevice.attributes.deviceImage;
+                if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+                    if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
+                    imgUrl = `/api/${imgUrl}`;
+                }
+                const fallback = (user.name || 'U').charAt(0).toUpperCase();
+                profileAvatar.innerHTML = `<img src="${imgUrl}" alt="${user.name}" onerror="this.outerHTML='${fallback}'">`;
+            } else {
+                profileAvatar.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+            }
+            
+            profileModal.classList.remove('hidden');
+        } catch (e) {
+            console.error('Hiba a profil megnyitásakor:', e);
         }
-        
-        profileModal.classList.remove('hidden');
     }
 
     profileBtn.addEventListener('click', openProfileModal);

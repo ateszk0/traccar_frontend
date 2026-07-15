@@ -18,7 +18,7 @@ export function clearRoute() {
 }
 
 export function drawRoute(positions) {
-    if (!map || positions.length === 0) return;
+    if (!map || !Array.isArray(positions) || positions.length === 0) return;
     
     clearRoute(); // Remove existing route first
     
@@ -216,9 +216,9 @@ function createClusterIcon(cluster) {
     
     toShow.forEach((m, i) => {
         const device = m.options.device;
-        let imgHtml = getInitials(device.name);
+        let imgHtml = getInitials(device ? device.name : '');
         
-        if (device.attributes && device.attributes.deviceImage) {
+        if (device && device.attributes && device.attributes.deviceImage) {
             let imgUrl = device.attributes.deviceImage;
             if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
                 if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
