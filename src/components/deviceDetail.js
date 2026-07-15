@@ -1,7 +1,7 @@
-import store from '../store/state.js';
-import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js';
-import { api } from '../api/traccar.js';
-import { drawRoute, clearRoute } from './map.js';
+import store from '../store/state.js?v=4';
+import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=4';
+import { api } from '../api/traccar.js?v=4';
+import { drawRoute, clearRoute } from './map.js?v=4';
 
 export function initDeviceDetail() {
     const panel = document.getElementById('device-detail');

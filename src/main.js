@@ -1,10 +1,10 @@
-import store from './store/state.js';
-import { api } from './api/traccar.js';
-import { connectWebSocket, disconnectWebSocket } from './api/websocket.js';
-import { initLogin } from './components/login.js';
-import { initMap } from './components/map.js';
-import { initSidebar } from './components/sidebar.js';
-import { initDeviceDetail } from './components/deviceDetail.js';
+import store from './store/state.js?v=4';
+import { api } from './api/traccar.js?v=4';
+import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=4';
+import { initLogin } from './components/login.js?v=4';
+import { initMap } from './components/map.js?v=4';
+import { initSidebar } from './components/sidebar.js?v=4';
+import { initDeviceDetail } from './components/deviceDetail.js?v=4';
 
 // DOM Elements
 const loginView = document.getElementById('login-view');

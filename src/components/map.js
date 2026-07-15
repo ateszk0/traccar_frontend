@@ -43,12 +43,13 @@ export function drawRoute(positions) {
         // HSL mapping: 240 (Blue, 0 speed) -> 0 (Red, max speed)
         const ratio = Math.min(speed / maxSpeed, 1);
         const hue = Math.round(240 - (ratio * 240));
+        const color = `hsl(${hue}, 100%, 50%)`;
         
         const segment = L.polyline([
             [p1.latitude, p1.longitude],
             [p2.latitude, p2.longitude]
         ], {
-            color: `hsl(${hue}, 100%, 50%)`,
+            color: color,
             weight: 5,
             opacity: 0.8,
             lineJoin: 'round',
@@ -56,6 +57,23 @@ export function drawRoute(positions) {
         });
         
         routeLayer.addLayer(segment);
+        
+        // Add tiny point marker matching the segment color
+        const time = new Date(p1.deviceTime || p1.serverTime);
+        if (!isNaN(time.getTime())) {
+            const timeString = time.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+            const p1Marker = L.circleMarker([p1.latitude, p1.longitude], {
+                radius: 2, // very small
+                color: 'transparent',
+                fillColor: color,
+                fillOpacity: 1
+            });
+            p1Marker.bindTooltip(`<strong>${timeString}</strong> (${Math.round((p1.speed||0)*1.852)} km/h)`, {
+                direction: 'top',
+                offset: [0, -2]
+            });
+            routeLayer.addLayer(p1Marker);
+        }
     }
     
     // Add time markers only for Start, End, and significant stops (to avoid lagging the map)
@@ -79,9 +97,11 @@ export function drawRoute(positions) {
         routeLayer.addLayer(marker);
     };
     
-    addMarker(positions[0], 'Start');
-    if (positions.length > 1) {
-        addMarker(positions[positions.length - 1], 'Cél');
+    if (positions.length > 0) {
+        addMarker(positions[0], 'Start');
+        if (positions.length > 1) {
+            addMarker(positions[positions.length - 1], 'Cél');
+        }
     }
     
     // Find major stops (speed < 1 knot and time gap > 5 mins)
