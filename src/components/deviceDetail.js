@@ -123,12 +123,14 @@ export function initDeviceDetail() {
     
     closeBtn.addEventListener('click', () => {
         store.setSelectedDevice(null);
+        showingRoute = false;
         clearRoute();
     });
     
     const intervalSelect = document.getElementById('history-interval');
     
     let isReplayLoading = false;
+    let showingRoute = false;
     
     replayBtn.addEventListener('click', async () => {
         const id = store.state.selectedDeviceId;
@@ -165,6 +167,7 @@ export function initDeviceDetail() {
                 
                 // Hide panel on mobile to see the map
                 if (window.innerWidth <= 768) {
+                    showingRoute = true;
                     panel.classList.add('hidden');
                 }
             } else {
@@ -189,6 +192,7 @@ export function initDeviceDetail() {
         const id = state.selectedDeviceId;
         if (!id) {
             panel.classList.add('hidden');
+            showingRoute = false;
             clearRoute();
             return;
         }
@@ -247,7 +251,10 @@ export function initDeviceDetail() {
         // Populate extra info
         extraInfoEl.innerHTML = renderExtraInfo(device, position);
         
-        panel.classList.remove('hidden');
+        // Don't re-open the panel if we're in route-viewing mode on mobile
+        if (!showingRoute) {
+            panel.classList.remove('hidden');
+        }
     });
 
     // Navigation Modal Logic
