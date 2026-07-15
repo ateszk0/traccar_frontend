@@ -9,16 +9,18 @@ export function initLogin(onSuccess) {
     const toggleIcon = togglePasswordBtn.querySelector('i');
     
     // Toggle password visibility
-    togglePasswordBtn.addEventListener('click', () => {
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.setAttribute('data-lucide', 'eye-off');
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.setAttribute('data-lucide', 'eye');
-        }
-        lucide.createIcons();
-    });
+    if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', () => {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                togglePasswordBtn.innerHTML = '<i data-lucide="eye-off"></i>';
+            } else {
+                passwordInput.type = 'password';
+                togglePasswordBtn.innerHTML = '<i data-lucide="eye"></i>';
+            }
+            lucide.createIcons();
+        });
+    }
 
     // Basic sanitization
     function sanitize(input) {

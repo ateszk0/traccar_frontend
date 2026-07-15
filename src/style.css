@@ -585,7 +585,7 @@ html.dark .marker-pin { border-color: var(--color-surface); }
 .password-toggle {
     position: absolute;
     right: 0.5rem;
-    background: none;
+    background: transparent;
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
@@ -595,6 +595,11 @@ html.dark .marker-pin { border-color: var(--color-surface); }
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 10;
+}
+.password-toggle:hover {
+    color: var(--color-primary);
+    background: transparent;
 }
 .password-toggle i {
     width: 20px !important;
