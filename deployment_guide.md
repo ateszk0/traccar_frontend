@@ -33,6 +33,26 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # PWA Service Worker - NEVER cache it so updates are detected immediately
+    location = /sw.js {
+        log_not_found off;
+        access_log off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+    }
+
+    # PWA manifest
+    location = /manifest.json {
+        add_header Cache-Control "no-cache";
+        add_header Access-Control-Allow-Origin "*";
+    }
+
+    # Static assets (cache them for 1 day, or use no-cache if you update frequently)
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|webp|woff|woff2|ttf|otf)$ {
+        expires 1d;
+        access_log off;
+        add_header Cache-Control "public, no-transform";
+    }
+
     # Statikus frontend fájlok kiszolgálása
     location / {
         try_files $uri $uri/ /index.html;

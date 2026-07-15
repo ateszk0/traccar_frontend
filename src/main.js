@@ -158,7 +158,29 @@ async function initializeApp() {
     initMap();
     initSidebar();
     initDeviceDetail();
-    
+
+    // ─── Mobile Sidebar Toggle ───
+    const sidebarEl = document.getElementById('sidebar');
+    const toggleListBtn = document.getElementById('btn-toggle-list');
+    const closeSidebarBtn = document.getElementById('close-sidebar');
+
+    if (toggleListBtn) {
+        toggleListBtn.addEventListener('click', () => {
+            sidebarEl.classList.toggle('mobile-open');
+        });
+    }
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', () => {
+            sidebarEl.classList.remove('mobile-open');
+        });
+    }
+
+    // Auto-close sidebar when device selected on mobile
+    store.subscribe((state) => {
+        if (state.selectedDeviceId && window.innerWidth <= 768) {
+            sidebarEl.classList.remove('mobile-open');
+        }
+    });
     
     // My Location FAB
     document.getElementById('btn-my-location').addEventListener('click', () => {
@@ -275,6 +297,15 @@ export function showToast(message, type = 'info') {
 }
 
 window.showToast = showToast; // Expose globally just in case
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('[SW] Registration failed:', err);
+        });
+    });
+}
 
 // Start the app
 document.addEventListener('DOMContentLoaded', initializeApp);

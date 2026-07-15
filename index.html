@@ -3,9 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Traccar+</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Traccar+">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +64,9 @@
             <!-- Sidebar -->
             <aside id="sidebar" class="sidebar">
                 <div class="sidebar-header">
+                    <button id="close-sidebar" class="icon-btn mobile-only" title="Vissza">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
                     <h2>Eszközök</h2>
                     <button id="profile-btn" class="icon-btn" title="Profil szerkesztése">
                         <i data-lucide="user"></i>
@@ -80,6 +91,11 @@
                 <!-- Floating Action Button for My Location -->
                 <button id="btn-my-location" class="fab-btn" title="Saját helyzetem">
                     <i data-lucide="navigation"></i>
+                </button>
+
+                <!-- Mobile: toggle device list -->
+                <button id="btn-toggle-list" class="fab-btn fab-secondary" title="Eszközlista">
+                    <i data-lucide="users"></i>
                 </button>
 
                 <!-- Overlay Panels -->
