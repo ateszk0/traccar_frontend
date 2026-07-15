@@ -188,7 +188,14 @@ async function initializeApp() {
         const myName = store.state.user.name;
         const myDevice = Object.values(store.state.devices).find(d => d.name === myName);
         if (myDevice) {
-            store.setSelectedDevice(myDevice.id);
+            const pos = store.state.positions[myDevice.id];
+            if (pos) {
+                import('./components/map.js').then(module => {
+                    module.flyToLocation(pos.latitude, pos.longitude, 16);
+                });
+            } else {
+                showToast('Nem található pozíció a saját eszközhöz.', 'warning');
+            }
         } else {
             showToast('Nem található saját eszköz (Nincs olyan eszköz, aminek a neve megegyezik a tieddel).', 'warning');
         }

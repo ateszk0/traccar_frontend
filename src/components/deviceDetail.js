@@ -162,6 +162,11 @@ export function initDeviceDetail() {
             if (history && history.length > 0) {
                 drawRoute(history);
                 replayBtn.innerHTML = '<i data-lucide="check"></i> Betöltve';
+                
+                // Hide panel on mobile to see the map
+                if (window.innerWidth <= 768) {
+                    panel.classList.add('hidden');
+                }
             } else {
                 replayBtn.innerHTML = '<i data-lucide="info"></i> Nincs adat';
             }

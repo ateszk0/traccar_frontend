@@ -17,47 +17,85 @@ export function clearRoute() {
     }
 }
 
+export function flyToLocation(lat, lng, zoom = 16) {
+    if (map) {
+        map.flyTo([lat, lng], zoom, { duration: 1 });
+    }
+}
+
 export function drawRoute(positions) {
     if (!map || !Array.isArray(positions) || positions.length === 0) return;
     
     clearRoute(); // Remove existing route first
     
-    const latlngs = positions.map(p => [p.latitude, p.longitude]);
+    routeLayer = L.featureGroup();
     
-    const polyline = L.polyline(latlngs, {
-        color: '#3b82f6',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '10, 10',
-        lineJoin: 'round'
-    });
+    // Find max speed in knots to scale the heatmap dynamically
+    let maxSpeed = Math.max(...positions.map(p => p.speed || 0));
+    if (maxSpeed < 5) maxSpeed = 5; // Set a minimum max-speed to avoid making slow walking all red
     
-    routeLayer = L.featureGroup([polyline]);
+    // Draw segments with dynamic colors based on speed
+    for (let i = 0; i < positions.length - 1; i++) {
+        const p1 = positions[i];
+        const p2 = positions[i+1];
+        const speed = p2.speed || 0;
+        
+        // HSL mapping: 240 (Blue, 0 speed) -> 0 (Red, max speed)
+        const ratio = Math.min(speed / maxSpeed, 1);
+        const hue = Math.round(240 - (ratio * 240));
+        
+        const segment = L.polyline([
+            [p1.latitude, p1.longitude],
+            [p2.latitude, p2.longitude]
+        ], {
+            color: `hsl(${hue}, 100%, 50%)`,
+            weight: 5,
+            opacity: 0.8,
+            lineJoin: 'round',
+            lineCap: 'round'
+        });
+        
+        routeLayer.addLayer(segment);
+    }
     
-    // Add time markers
-    positions.forEach(p => {
+    // Add time markers only for Start, End, and significant stops (to avoid lagging the map)
+    const addMarker = (p, label) => {
         const time = new Date(p.deviceTime || p.serverTime);
         if (isNaN(time.getTime())) return;
-        
         const timeString = time.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
-        const dateString = time.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
         
         const marker = L.circleMarker([p.latitude, p.longitude], {
-            radius: 5,
+            radius: 6,
             color: '#ffffff',
             weight: 2,
-            fillColor: '#3b82f6',
+            fillColor: label === 'Start' ? '#10b981' : label === 'Cél' ? '#ef4444' : '#f59e0b',
             fillOpacity: 1
         });
         
-        marker.bindTooltip(`<strong>${dateString} ${timeString}</strong>`, {
+        marker.bindTooltip(`<strong>${label}</strong><br>${timeString} (${Math.round((p.speed||0)*1.852)} km/h)`, {
             direction: 'top',
-            offset: [0, -5],
-            opacity: 0.9
+            offset: [0, -5]
         });
-        
         routeLayer.addLayer(marker);
-    });
+    };
+    
+    addMarker(positions[0], 'Start');
+    if (positions.length > 1) {
+        addMarker(positions[positions.length - 1], 'Cél');
+    }
+    
+    // Find major stops (speed < 1 knot and time gap > 5 mins)
+    for (let i = 1; i < positions.length - 1; i++) {
+        const p = positions[i];
+        const prev = positions[i-1];
+        if ((p.speed || 0) < 1) {
+            const t1 = new Date(prev.deviceTime || prev.serverTime).getTime();
+            const t2 = new Date(p.deviceTime || p.serverTime).getTime();
+            if (t2 - t1 > 5 * 60 * 1000) { // 5 minutes
+                addMarker(p, 'Megállás');
+            }
+        }
+    }
     
     routeLayer.addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
@@ -86,6 +124,11 @@ export function initMap() {
         zoomToBoundsOnClick: true
     });
     map.addLayer(markerClusterGroup);
+
+    // Click map to deselect
+    map.on('click', () => {
+        store.setSelectedDevice(null);
+    });
 
     // Map drag events to interrupt follow mode
     map.on('dragstart', () => {
