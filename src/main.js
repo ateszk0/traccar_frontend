@@ -62,18 +62,16 @@ async function initializeApp() {
             profileName.textContent = user.name || 'Ismeretlen';
             profileEmail.textContent = user.email || user.emailAddress || '';
             
-            // Find matching device to show avatar
-            const myDevice = Object.values(store.state.devices || {}).find(d => d.name === user.name);
-            if (myDevice && myDevice.attributes && myDevice.attributes.deviceImage) {
-                let imgUrl = myDevice.attributes.deviceImage;
-                if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
-                    if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
-                    imgUrl = `/api/${imgUrl}`;
-                }
-                const fallback = (user.name || 'U').charAt(0).toUpperCase();
-                profileAvatar.innerHTML = `<img src="${imgUrl}" alt="${user.name}" onerror="this.outerHTML='${fallback}'">`;
+            // Local frontend-only avatar
+            const localAvatarKey = `traccar_frontend_avatar_${user.email || user.id}`;
+            const localImgUrl = localStorage.getItem(localAvatarKey);
+            
+            const fallback = (user.name || 'U').charAt(0).toUpperCase();
+            
+            if (localImgUrl) {
+                profileAvatar.innerHTML = `<img src="${localImgUrl}" alt="${user.name}" onerror="this.outerHTML='${fallback}'">`;
             } else {
-                profileAvatar.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+                profileAvatar.textContent = fallback;
             }
             
             profileModal.classList.remove('hidden');
@@ -89,36 +87,31 @@ async function initializeApp() {
         profileAvatarUpload.click();
     });
 
-    profileAvatarUpload.addEventListener('change', async (e) => {
+    profileAvatarUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         const user = store.state.user;
         if (!file || !user) return;
-        
-        const myDevice = Object.values(store.state.devices).find(d => d.name === user.name);
-        if (!myDevice) {
-            showToast('Nincs saját eszközöd beállítva. Kérj meg egy admint, hogy hozzon létre eszközt a neveddel!', 'warning');
-            return;
-        }
         
         try {
             profileAvatar.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width: 24px; height: 24px;"></i>';
             lucide.createIcons();
             
-            await api.uploadDeviceImage(myDevice.id, file);
-            if (window.showToast) window.showToast('Profilkép sikeresen frissítve!', 'success');
-            
-            // Refresh devices
-            const devices = await api.getDevices();
-            if (devices) {
-                store.setDevices(devices);
-                openProfileModal(); // Refresh modal UI
-            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64String = event.target.result;
+                const localAvatarKey = `traccar_frontend_avatar_${user.email || user.id}`;
+                localStorage.setItem(localAvatarKey, base64String);
+                
+                if (window.showToast) window.showToast('Profilkép sikeresen frissítve (csak ebben a böngészőben)!', 'success');
+                openProfileModal(); // Refresh UI
+            };
+            reader.readAsDataURL(file);
         } catch (err) {
-            console.error('Error uploading avatar:', err);
-            if (window.showToast) window.showToast('Hiba történt a profilkép feltöltésekor!', 'warning');
-            openProfileModal(); // Reset modal UI
+            console.error('Error reading avatar:', err);
+            if (window.showToast) window.showToast('Hiba történt a profilkép beállításakor!', 'warning');
+            openProfileModal(); // Reset
         } finally {
-            profileAvatarUpload.value = '';
+            profileAvatarUpload.value = ''; // Reset input
         }
     });
 
