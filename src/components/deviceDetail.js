@@ -27,21 +27,21 @@ export function initDeviceDetail() {
     const COOLDOWN_MS = 60000;
 
     // ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════════
     // BOTTOM SHEET DRAG LOGIC (mobile only)
     // ═══════════════════════════════════════════════
-    const SHEET_HEIGHT = () => panel.offsetHeight || window.innerHeight * 0.85;
     const PEEK_HEIGHT = 140; // px visible in peek state
     const HALF_RATIO = 0.45; // 45% of screen
-    const FULL_RATIO = 0.85; // 85% of screen
     
     // Sheet states as translateY values (from top of sheet)
     function getSnapPoints() {
-        const sh = SHEET_HEIGHT();
+        // Fallback to window.innerHeight * 0.85 if offsetHeight is 0
+        const sh = panel.offsetHeight || (window.innerHeight * 0.85);
         return {
-            peek: sh - PEEK_HEIGHT,               // Most of sheet hidden
-            half: sh - window.innerHeight * HALF_RATIO, // ~45% visible
-            full: 0,                               // Fully open
-            closed: sh + 50                        // Off screen
+            peek: sh - PEEK_HEIGHT,                     // Most of sheet hidden
+            half: sh - (window.innerHeight * HALF_RATIO), // ~45% visible
+            full: 0,                                     // Fully open
+            closed: sh + 50                              // Off screen
         };
     }
     
@@ -52,6 +52,7 @@ export function initDeviceDetail() {
     let lastTouchY = 0;
     let lastTouchTime = 0;
     let velocity = 0;
+    let currentTranslateY = 0; // Explicitly track to avoid DOMMatrix parsing
     
     function isMobile() {
         return window.innerWidth <= 768;
@@ -59,6 +60,8 @@ export function initDeviceDetail() {
     
     function setSheetPosition(translateY, animate = true) {
         if (!isMobile()) return;
+        currentTranslateY = translateY;
+        
         if (animate) {
             panel.classList.remove('dragging');
         } else {
@@ -81,10 +84,9 @@ export function initDeviceDetail() {
     function openSheet() {
         if (isMobile()) {
             panel.classList.remove('hidden');
-            // Small delay to ensure the hidden class removal triggers layout
-            requestAnimationFrame(() => {
-                snapTo('peek', true);
-            });
+            // Force layout recalculation so the transition works
+            void panel.offsetWidth;
+            snapTo('peek', true);
         } else {
             panel.classList.remove('hidden');
         }
@@ -100,24 +102,27 @@ export function initDeviceDetail() {
         lastTouchTime = Date.now();
         velocity = 0;
         
-        // Get current translateY
-        const transform = window.getComputedStyle(panel).transform;
-        if (transform && transform !== 'none') {
-            const matrix = new DOMMatrixReadOnly(transform);
-            touchStartTranslateY = matrix.m42;
-        } else {
-            touchStartTranslateY = getSnapPoints().peek;
+        // Use our explicitly tracked value, or default to peek if unset
+        if (!currentTranslateY) {
+            currentTranslateY = getSnapPoints()[currentState] || getSnapPoints().peek;
         }
+        touchStartTranslateY = currentTranslateY;
         
         panel.classList.add('dragging');
     }
     
     function handleTouchMove(e) {
         if (!isDragging || !isMobile()) return;
-        e.preventDefault();
         
+        // Prevent default scrolling only if we are moving vertically
         const touch = e.touches[0];
         const deltaY = touch.clientY - touchStartY;
+        
+        // Only prevent default if it's a clear vertical drag
+        if (Math.abs(deltaY) > 5) {
+            e.preventDefault();
+        }
+        
         let newY = touchStartTranslateY + deltaY;
         
         // Clamp: don't go above full (0) or below closed
@@ -138,6 +143,7 @@ export function initDeviceDetail() {
         lastTouchY = touch.clientY;
         lastTouchTime = now;
         
+        currentTranslateY = newY;
         panel.style.transform = `translateY(${newY}px)`;
     }
     
@@ -145,13 +151,6 @@ export function initDeviceDetail() {
         if (!isDragging || !isMobile()) return;
         isDragging = false;
         panel.classList.remove('dragging');
-        
-        const transform = window.getComputedStyle(panel).transform;
-        let currentY = 0;
-        if (transform && transform !== 'none') {
-            const matrix = new DOMMatrixReadOnly(transform);
-            currentY = matrix.m42;
-        }
         
         const snaps = getSnapPoints();
         const VELOCITY_THRESHOLD = 0.5; // px/ms
@@ -179,13 +178,13 @@ export function initDeviceDetail() {
         
         // Position-based snapping (find closest snap point)
         const distances = [
-            { state: 'full', dist: Math.abs(currentY - snaps.full) },
-            { state: 'half', dist: Math.abs(currentY - snaps.half) },
-            { state: 'peek', dist: Math.abs(currentY - snaps.peek) }
+            { state: 'full', dist: Math.abs(currentTranslateY - snaps.full) },
+            { state: 'half', dist: Math.abs(currentTranslateY - snaps.half) },
+            { state: 'peek', dist: Math.abs(currentTranslateY - snaps.peek) }
         ];
         
         // If dragged far enough down from peek, close it
-        if (currentY > snaps.peek + 60) {
+        if (currentTranslateY > snaps.peek + 60) {
             store.setSelectedDevice(null);
             showingRoute = false;
             clearRoute();
