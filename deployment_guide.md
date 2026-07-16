@@ -33,7 +33,14 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # PWA Service Worker - NEVER cache it so updates are detected immediately
+    # index.html - NEVER cache, so browsers always get the latest version
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+
+    # PWA Service Worker - NEVER cache
     location = /sw.js {
         log_not_found off;
         access_log off;
@@ -46,9 +53,9 @@ server {
         add_header Access-Control-Allow-Origin "*";
     }
 
-    # Static assets (cache them for 1 day, or use no-cache if you update frequently)
+    # Static assets (JS/CSS/images) - use ?v= cache busting, allow short cache
     location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|webp|woff|woff2|ttf|otf)$ {
-        expires 1d;
+        expires 1h;
         access_log off;
         add_header Cache-Control "public, no-transform";
     }
@@ -56,6 +63,8 @@ server {
     # Statikus frontend fájlok kiszolgálása
     location / {
         try_files $uri $uri/ /index.html;
+        # Ensure HTML pages are not cached
+        add_header Cache-Control "no-cache";
     }
 
     # Traccar API kérések továbbítása a Traccar LXC-nek

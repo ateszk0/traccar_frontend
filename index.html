@@ -229,8 +229,26 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Cache Buster: force-clear any stale Service Workers and caches -->
+    <script>
+        (function() {
+            if ('serviceWorker' in navigator) {
+                // Unregister all service workers
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    registrations.forEach(function(r) { r.unregister(); });
+                });
+                // Clear all caches
+                if (window.caches) {
+                    caches.keys().then(function(names) {
+                        names.forEach(function(name) { caches.delete(name); });
+                    });
+                }
+            }
+        })();
+    </script>
+
     <!-- App Entry Point -->
-    <script type="module" src="src/main.js?v=7"></script>
+    <script type="module" src="src/main.js?v=8"></script>
 </body>
 
 </html>

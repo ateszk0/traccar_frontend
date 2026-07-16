@@ -1,65 +1,29 @@
-const CACHE_NAME = 'traccar-plus-v7';
-const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/src/style.css',
-    '/src/main.js',
-    '/src/store/state.js',
-    '/src/api/traccar.js',
-    '/src/api/websocket.js',
-    '/src/components/login.js',
-    '/src/components/map.js',
-    '/src/components/sidebar.js',
-    '/src/components/deviceDetail.js',
-    '/src/utils/format.js',
-    '/icons/icon.svg',
-    '/manifest.json'
-];
+// This service worker immediately unregisters itself and clears all caches.
+// This is intentional - we are removing SW-based caching to fix stale cache issues on mobile.
 
-// Install: cache static assets
-self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(STATIC_ASSETS))
-            .then(() => self.skipWaiting())
-    );
+self.addEventListener('install', () => {
+    self.skipWaiting();
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-        ).then(() => self.clients.claim())
-    );
-});
-
-// Fetch: network-first for API, cache-first for static
-self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
-
-    // Don't intercept API calls or WebSocket upgrades
-    if (url.pathname.startsWith('/api/')) return;
-
-    // Cache-first for static assets
-    event.respondWith(
-        caches.match(event.request).then(cached => {
-            if (cached) return cached;
-            return fetch(event.request).then(response => {
-                if (response.ok && response.type === 'basic') {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                }
-                return response;
+            Promise.all(keys.map(k => caches.delete(k)))
+        ).then(() => {
+            return self.clients.claim();
+        }).then(() => {
+            // Tell all open pages to reload
+            return self.clients.matchAll({ type: 'window' }).then(clients => {
+                clients.forEach(client => client.navigate(client.url));
             });
-        }).catch(() => {
-            // Offline fallback
-            if (event.request.mode === 'navigate') {
-                return caches.match('/index.html');
-            }
         })
     );
+    // Unregister this SW
+    self.registration.unregister();
+});
+
+// Don't intercept any requests - just pass through
+self.addEventListener('fetch', () => {
+    // No-op: let the browser handle all requests normally
+    return;
 });

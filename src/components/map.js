@@ -1,5 +1,5 @@
-import store from '../store/state.js?v=5';
-import { getInitials } from '../utils/format.js?v=5';
+import store from '../store/state.js?v=8';
+import { getInitials } from '../utils/format.js?v=8';
 
 let map = null;
 let markerClusterGroup = null;
