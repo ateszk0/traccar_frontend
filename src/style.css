@@ -504,8 +504,8 @@ html.dark #map { background-color: #1e293b; } /* darker map bg placeholder */
     border: none;
 }
 .marker-pin {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background-color: var(--color-primary);
     border: 3px solid white;
@@ -725,13 +725,13 @@ html.dark .marker-pin { border-color: var(--color-surface); }
 }
 .cluster-avatar-container {
     position: relative;
-    height: 40px;
+    height: 56px;
     display: flex;
     align-items: center;
 }
 .cluster-avatar {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     border: 3px solid var(--color-surface);
     background: var(--color-primary);
@@ -753,9 +753,9 @@ html.dark .marker-pin { border-color: var(--color-surface); }
 }
 /* Stagger the avatars so they overlap slightly */
 .cluster-avatar:nth-child(1) { left: 0; }
-.cluster-avatar:nth-child(2) { left: 25px; }
-.cluster-avatar:nth-child(3) { left: 50px; }
-.cluster-avatar:nth-child(4) { left: 75px; }
+.cluster-avatar:nth-child(2) { left: 35px; }
+.cluster-avatar:nth-child(3) { left: 70px; }
+.cluster-avatar:nth-child(4) { left: 105px; }
 
 .cluster-avatar.more {
     background: var(--color-text);
@@ -857,13 +857,15 @@ html.dark .marker-pin { border-color: var(--color-surface); }
 
     /* Drag Handle – visible on mobile */
     .sheet-drag-handle {
+        width: 100%;
+        height: 24px;
         display: flex;
-        align-items: center;
         justify-content: center;
-        padding: 0.625rem 0;
+        align-items: center;
         cursor: grab;
         touch-action: none;
-        user-select: none;
+        padding: 16px 0;
+        margin-bottom: -8px;
         -webkit-user-select: none;
     }
     .sheet-drag-bar {

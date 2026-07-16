@@ -1,7 +1,7 @@
-import store from '../store/state.js?v=8';
-import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=8';
-import { api } from '../api/traccar.js?v=8';
-import { drawRoute, clearRoute } from './map.js?v=8';
+import store from '../store/state.js?v=10';
+import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=10';
+import { api } from '../api/traccar.js?v=10';
+import { drawRoute, clearRoute } from './map.js?v=10';
 
 export function initDeviceDetail() {
     const panel = document.getElementById('device-detail');
@@ -155,7 +155,7 @@ export function initDeviceDetail() {
         }
         
         const snaps = getSnapPoints();
-        const VELOCITY_THRESHOLD = 0.5;
+        const VELOCITY_THRESHOLD = 0.25;
         
         if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
             if (velocity > 0) {
@@ -443,15 +443,17 @@ export function initDeviceDetail() {
         // Populate extra info
         extraInfoEl.innerHTML = renderExtraInfo(device, position);
         
-        // Show panel (only if not in route-viewing mode)
-        if (!showingRoute) {
-            const isNewDevice = id !== lastDeviceId;
-            if (isNewDevice) {
-                openSheet();
-                lastDeviceId = id;
-            } else if (!isMobile()) {
-                panel.classList.remove('hidden');
+        // Handle sheet visibility and route cleanup
+        const isNewDevice = id !== lastDeviceId;
+        if (isNewDevice) {
+            if (showingRoute) {
+                showingRoute = false;
+                clearRoute();
             }
+            openSheet();
+            lastDeviceId = id;
+        } else if (!showingRoute && !isMobile()) {
+            panel.classList.remove('hidden');
         }
     });
 

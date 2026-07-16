@@ -1,4 +1,4 @@
-import store from '../store/state.js?v=8';
+import store from '../store/state.js?v=10';
 
 const BASE_URL = '/api';
 
@@ -99,12 +99,11 @@ export const api = {
     },
     
     async uploadDeviceImage(deviceId, file) {
+        const formData = new FormData();
+        formData.append('file', file);
         return traccarFetch(`/devices/${deviceId}/image`, {
             method: 'POST',
-            body: file,
-            headers: {
-                'Content-Type': file.type
-            }
+            body: formData
         });
     },
     

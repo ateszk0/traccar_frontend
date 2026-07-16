@@ -291,8 +291,8 @@ function buildIcon(device, isSelected) {
     return L.divIcon({
         className: `custom-div-icon ${selectedClass}`,
         html: html,
-        iconSize: [32, 42],
-        iconAnchor: [16, 42]
+        iconSize: [54, 62],
+        iconAnchor: [27, 62]
     });
 }
 
