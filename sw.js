@@ -1,4 +1,4 @@
-const CACHE_NAME = 'traccar-plus-v3';
+const CACHE_NAME = 'traccar-plus-v5';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

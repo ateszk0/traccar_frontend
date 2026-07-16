@@ -292,7 +292,7 @@ h1, h2, h3, h4 { color: var(--color-text); font-weight: 600; }
 }
 html.dark #map { background-color: #1e293b; } /* darker map bg placeholder */
 
-/* Detail Panel Overlay */
+/* Detail Panel / Bottom Sheet */
 .detail-panel {
     position: absolute;
     bottom: 2rem;
@@ -302,32 +302,65 @@ html.dark #map { background-color: #1e293b; } /* darker map bg placeholder */
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     z-index: 1000;
-    padding: 1.5rem;
     border: 1px solid var(--color-border);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+    overflow: hidden;
 }
 .detail-panel.hidden {
     transform: translateY(20px);
     opacity: 0;
     pointer-events: none;
 }
+
+/* Drag Handle – hidden on desktop */
+.sheet-drag-handle {
+    display: none;
+}
+.sheet-drag-bar {
+    width: 36px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+}
+
+/* PEEK section */
+.sheet-peek {
+    padding: 1rem 1.25rem 0.75rem;
+    position: relative;
+}
 .close-btn {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0.75rem;
+    right: 0.75rem;
     background: transparent;
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
+    padding: 0.25rem;
+    z-index: 10;
 }
 .close-btn:hover { color: var(--color-text); }
-.detail-header {
+
+.peek-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding-right: 2rem; /* space for close btn */
 }
-.detail-title { display: flex; flex-direction: column; gap: 0.25rem; }
+.peek-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.peek-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .status-badge {
     display: inline-block;
     padding: 0.125rem 0.5rem;
@@ -338,47 +371,51 @@ html.dark #map { background-color: #1e293b; } /* darker map bg placeholder */
     color: var(--color-success);
     width: fit-content;
 }
-.detail-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+.peek-stats {
+    display: flex;
+    gap: 0.5rem;
     background-color: var(--color-bg);
-    padding: 1rem;
+    padding: 0.625rem 0.75rem;
     border-radius: var(--radius-md);
 }
-.stat-item {
+.peek-stat {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.375rem;
     color: var(--color-text-muted);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
-.stat-item span {
+.peek-stat svg { width: 14px; height: 14px; flex-shrink: 0; }
+.peek-stat span {
     color: var(--color-text);
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.875rem;
 }
-.stat-item svg { width: 16px; height: 16px; }
+
+/* Sheet Body */
+.sheet-body {
+    padding: 0.75rem 1.25rem 1.25rem;
+}
 .detail-address {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: var(--color-text-muted);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     line-height: 1.4;
 }
-.detail-address svg { flex-shrink: 0; margin-top: 2px; }
+.detail-address svg { flex-shrink: 0; margin-top: 2px; width: 16px; height: 16px; }
 
 .detail-extra-info {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
     font-size: 0.8rem;
     color: var(--color-text-muted);
     background: var(--color-bg);
-    padding: 1rem;
+    padding: 0.75rem;
     border-radius: var(--radius-md);
 }
 .detail-extra-info .extra-row {
@@ -393,6 +430,38 @@ html.dark #map { background-color: #1e293b; } /* darker map bg placeholder */
 }
 .detail-extra-info .extra-label { font-weight: 500; }
 .detail-extra-info .extra-val { color: var(--color-text); }
+
+/* Speed Legend (Leaflet control) */
+.speed-legend {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--color-border);
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    color: var(--color-text);
+    line-height: 1.4;
+}
+.speed-legend .legend-gradient {
+    width: 120px;
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(to right, 
+        hsl(240, 100%, 50%),
+        hsl(180, 100%, 50%),
+        hsl(120, 100%, 50%),
+        hsl(60, 100%, 50%),
+        hsl(0, 100%, 50%)
+    );
+}
+.speed-legend .legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
 
 .avatar-uploadable {
     cursor: pointer;
@@ -757,40 +826,83 @@ html.dark .marker-pin { border-color: var(--color-surface); }
     }
     .device-name { font-size: 0.925rem; }
 
-    /* ─── Detail panel: bottom sheet ─── */
+    /* ─── Bottom Sheet: 3-state draggable ─── */
     .detail-panel {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         width: 100%;
-        max-height: 75vh;
-        border-radius: 1.25rem 1.25rem 0 0;
-        overflow-y: auto;
+        height: 85vh;
+        height: 85dvh;
+        border-radius: 1rem 1rem 0 0;
         z-index: 1500;
-        padding: 0.75rem 1.25rem 1.25rem;
-        padding-bottom: calc(max(1.25rem, env(safe-area-inset-bottom, 0px)) + 0.5rem);
-        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
-        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s;
-    }
-    .detail-panel::before {
-        content: '';
-        display: block;
-        width: 36px;
-        height: 4px;
-        background: var(--color-border);
-        border-radius: 2px;
-        margin: 0 auto 0.75rem;
-        flex-shrink: 0;
+        padding: 0;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+        border: none;
+        overflow: hidden;
+        /* Default position: peek state. JS controls translateY */
+        transform: translateY(calc(85dvh - 140px));
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        will-change: transform;
     }
     .detail-panel.hidden {
-        transform: translateY(100%);
+        transform: translateY(100%) !important;
         opacity: 0;
         pointer-events: none;
     }
-    .detail-header { margin-bottom: 1rem; }
-    .detail-stats { margin-bottom: 1rem; padding: 0.75rem; }
-    .detail-address { margin-bottom: 1rem; }
+    .detail-panel.dragging {
+        transition: none !important; /* No transition while finger is moving */
+    }
+
+    /* Drag Handle – visible on mobile */
+    .sheet-drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.625rem 0;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .sheet-drag-bar {
+        width: 40px;
+        height: 4px;
+        background: var(--color-text-muted);
+        border-radius: 2px;
+        opacity: 0.5;
+    }
+
+    /* Peek section mobile tweaks */
+    .sheet-peek {
+        padding: 0 1rem 0.5rem;
+    }
+    .peek-row {
+        margin-bottom: 0.5rem;
+    }
+    .peek-info h3 {
+        font-size: 0.95rem;
+    }
+    .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
+    }
+
+    /* Sheet body: scrollable, initially hidden by translateY */
+    .sheet-body {
+        padding: 0.5rem 1rem 1rem;
+        padding-bottom: calc(max(1rem, env(safe-area-inset-bottom, 0px)) + 0.5rem);
+        overflow-y: auto;
+        max-height: calc(85dvh - 160px);
+    }
+
+    /* Close button repositioned */
+    .close-btn {
+        top: -0.25rem;
+        right: 0.5rem;
+    }
 
     /* ─── FABs ─── */
     .fab-btn {

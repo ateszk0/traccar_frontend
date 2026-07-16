@@ -1,10 +1,10 @@
-import store from './store/state.js?v=4';
-import { api } from './api/traccar.js?v=4';
-import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=4';
-import { initLogin } from './components/login.js?v=4';
-import { initMap } from './components/map.js?v=4';
-import { initSidebar } from './components/sidebar.js?v=4';
-import { initDeviceDetail } from './components/deviceDetail.js?v=4';
+import store from './store/state.js?v=5';
+import { api } from './api/traccar.js?v=5';
+import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=5';
+import { initLogin } from './components/login.js?v=5';
+import { initMap } from './components/map.js?v=5';
+import { initSidebar } from './components/sidebar.js?v=5';
+import { initDeviceDetail } from './components/deviceDetail.js?v=5';
 
 // DOM Elements
 const loginView = document.getElementById('login-view');
@@ -190,7 +190,7 @@ async function initializeApp() {
         if (myDevice) {
             const pos = store.state.positions[myDevice.id];
             if (pos) {
-                import('./components/map.js').then(module => {
+                import('./components/map.js?v=5').then(module => {
                     module.flyToLocation(pos.latitude, pos.longitude, 16);
                 });
             } else {

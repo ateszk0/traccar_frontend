@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <!-- App CSS -->
-    <link rel="stylesheet" href="src/style.css?v=3">
+    <link rel="stylesheet" href="src/style.css?v=5">
 </head>
 
 <body>
@@ -98,63 +98,75 @@
                     <i data-lucide="users"></i>
                 </button>
 
-                <!-- Overlay Panels -->
+                <!-- Bottom Sheet Device Detail -->
                 <div id="device-detail" class="detail-panel hidden">
-                    <button class="close-btn" id="close-detail">
-                        <i data-lucide="x"></i>
-                    </button>
-                    <div class="detail-header">
-                        <div class="avatar large avatar-uploadable" id="detail-avatar"
-                            title="Kattints a profilkép módosításához">U</div>
-                        <input type="file" id="avatar-upload" accept="image/*" class="hidden">
-                        <div class="detail-title">
-                            <h3 id="detail-name">User Name</h3>
-                            <span id="detail-status" class="status-badge">Online</span>
-                        </div>
-                    </div>
-                    <div class="detail-stats">
-                        <div class="stat-item">
-                            <i data-lucide="activity"></i>
-                            <span id="detail-speed">0 km/h</span>
-                        </div>
-                        <div class="stat-item">
-                            <i data-lucide="battery"></i>
-                            <span id="detail-battery">- %</span>
-                        </div>
-                        <div class="stat-item">
-                            <i data-lucide="clock"></i>
-                            <span id="detail-time">0 perce</span>
-                        </div>
-                    </div>
-                    <div class="detail-address" id="detail-address">
-                        <i data-lucide="map-pin"></i>
-                        <span>Cím keresése...</span>
+                    <!-- Drag Handle (touch target) -->
+                    <div class="sheet-drag-handle" id="sheet-drag-handle">
+                        <div class="sheet-drag-bar"></div>
                     </div>
 
-                    <div class="detail-extra-info" id="detail-extra-info">
-                        <!-- Extra info (e.g. distance, motion, contact) will be injected here -->
+                    <!-- PEEK section: always visible when sheet is open -->
+                    <div class="sheet-peek" id="sheet-peek">
+                        <button class="close-btn" id="close-detail">
+                            <i data-lucide="x"></i>
+                        </button>
+                        <div class="peek-row">
+                            <div class="avatar avatar-uploadable" id="detail-avatar"
+                                title="Kattints a profilkép módosításához">U</div>
+                            <input type="file" id="avatar-upload" accept="image/*" class="hidden">
+                            <div class="peek-info">
+                                <h3 id="detail-name">User Name</h3>
+                                <span id="detail-status" class="status-badge">Online</span>
+                            </div>
+                        </div>
+                        <div class="peek-stats">
+                            <div class="peek-stat">
+                                <i data-lucide="activity"></i>
+                                <span id="detail-speed">0 km/h</span>
+                            </div>
+                            <div class="peek-stat">
+                                <i data-lucide="battery"></i>
+                                <span id="detail-battery">- %</span>
+                            </div>
+                            <div class="peek-stat">
+                                <i data-lucide="clock"></i>
+                                <span id="detail-time">0 perce</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="detail-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <select id="history-interval" class="history-select"
-                            style="flex: 1; border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 0.5rem; background: var(--color-bg); color: var(--color-text);">
-                            <option value="today">Ma</option>
-                            <option value="yesterday">Tegnap</option>
-                            <option value="last24">Elmúlt 24 óra</option>
-                            <option value="last3days">Elmúlt 3 nap</option>
-                            <option value="lastweek">Elmúlt 1 hét</option>
-                        </select>
-                        <button class="btn btn-secondary" id="btn-replay" style="flex: 1;">
-                            <i data-lucide="history"></i> Betöltés
-                        </button>
-                    </div>
-                    <div class="detail-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                        <button class="btn btn-primary" id="btn-request-single" style="flex: 1;">
-                            <i data-lucide="refresh-cw"></i> Frissítés
-                        </button>
-                        <button class="btn btn-secondary" id="btn-navigate" style="flex: 1;">
-                            <i data-lucide="navigation"></i> Útvonal
-                        </button>
+                    <!-- SCROLLABLE BODY: visible in half/full states -->
+                    <div class="sheet-body" id="sheet-body">
+                        <div class="detail-address" id="detail-address">
+                            <i data-lucide="map-pin"></i>
+                            <span>Cím keresése...</span>
+                        </div>
+
+                        <div class="detail-extra-info" id="detail-extra-info">
+                            <!-- Extra info rows injected here -->
+                        </div>
+
+                        <div class="detail-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <select id="history-interval" class="history-select"
+                                style="flex: 1; border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 0.5rem; background: var(--color-bg); color: var(--color-text);">
+                                <option value="today">Ma</option>
+                                <option value="yesterday">Tegnap</option>
+                                <option value="last24">Elmúlt 24 óra</option>
+                                <option value="last3days">Elmúlt 3 nap</option>
+                                <option value="lastweek">Elmúlt 1 hét</option>
+                            </select>
+                            <button class="btn btn-secondary" id="btn-replay" style="flex: 1;">
+                                <i data-lucide="history"></i> Betöltés
+                            </button>
+                        </div>
+                        <div class="detail-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary" id="btn-request-single" style="flex: 1;">
+                                <i data-lucide="refresh-cw"></i> Frissítés
+                            </button>
+                            <button class="btn btn-secondary" id="btn-navigate" style="flex: 1;">
+                                <i data-lucide="navigation"></i> Útvonal
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -218,7 +230,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- App Entry Point -->
-    <script type="module" src="src/main.js?v=4"></script>
+    <script type="module" src="src/main.js?v=5"></script>
 </body>
 
 </html>

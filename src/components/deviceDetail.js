@@ -1,11 +1,13 @@
-import store from '../store/state.js?v=4';
-import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=4';
-import { api } from '../api/traccar.js?v=4';
-import { drawRoute, clearRoute } from './map.js?v=4';
+import store from '../store/state.js?v=5';
+import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=5';
+import { api } from '../api/traccar.js?v=5';
+import { drawRoute, clearRoute } from './map.js?v=5';
 
 export function initDeviceDetail() {
     const panel = document.getElementById('device-detail');
     const closeBtn = document.getElementById('close-detail');
+    const dragHandle = document.getElementById('sheet-drag-handle');
+    const sheetPeek = document.getElementById('sheet-peek');
     
     // UI Elements
     const avatar = document.getElementById('detail-avatar');
@@ -24,6 +26,188 @@ export function initDeviceDetail() {
     let cooldownTimer = null;
     const COOLDOWN_MS = 60000;
 
+    // ═══════════════════════════════════════════════
+    // BOTTOM SHEET DRAG LOGIC (mobile only)
+    // ═══════════════════════════════════════════════
+    const SHEET_HEIGHT = () => panel.offsetHeight || window.innerHeight * 0.85;
+    const PEEK_HEIGHT = 140; // px visible in peek state
+    const HALF_RATIO = 0.45; // 45% of screen
+    const FULL_RATIO = 0.85; // 85% of screen
+    
+    // Sheet states as translateY values (from top of sheet)
+    function getSnapPoints() {
+        const sh = SHEET_HEIGHT();
+        return {
+            peek: sh - PEEK_HEIGHT,               // Most of sheet hidden
+            half: sh - window.innerHeight * HALF_RATIO, // ~45% visible
+            full: 0,                               // Fully open
+            closed: sh + 50                        // Off screen
+        };
+    }
+    
+    let currentState = 'peek'; // 'peek' | 'half' | 'full'
+    let touchStartY = 0;
+    let touchStartTranslateY = 0;
+    let isDragging = false;
+    let lastTouchY = 0;
+    let lastTouchTime = 0;
+    let velocity = 0;
+    
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+    
+    function setSheetPosition(translateY, animate = true) {
+        if (!isMobile()) return;
+        if (animate) {
+            panel.classList.remove('dragging');
+        } else {
+            panel.classList.add('dragging');
+        }
+        panel.style.transform = `translateY(${translateY}px)`;
+    }
+    
+    function snapTo(state, animate = true) {
+        const snaps = getSnapPoints();
+        currentState = state;
+        if (state === 'closed') {
+            panel.classList.add('hidden');
+            return;
+        }
+        setSheetPosition(snaps[state], animate);
+    }
+    
+    // Open sheet to peek state
+    function openSheet() {
+        if (isMobile()) {
+            panel.classList.remove('hidden');
+            // Small delay to ensure the hidden class removal triggers layout
+            requestAnimationFrame(() => {
+                snapTo('peek', true);
+            });
+        } else {
+            panel.classList.remove('hidden');
+        }
+    }
+    
+    // Touch events on drag handle AND peek section
+    function handleTouchStart(e) {
+        if (!isMobile()) return;
+        isDragging = true;
+        const touch = e.touches[0];
+        touchStartY = touch.clientY;
+        lastTouchY = touch.clientY;
+        lastTouchTime = Date.now();
+        velocity = 0;
+        
+        // Get current translateY
+        const transform = window.getComputedStyle(panel).transform;
+        if (transform && transform !== 'none') {
+            const matrix = new DOMMatrixReadOnly(transform);
+            touchStartTranslateY = matrix.m42;
+        } else {
+            touchStartTranslateY = getSnapPoints().peek;
+        }
+        
+        panel.classList.add('dragging');
+    }
+    
+    function handleTouchMove(e) {
+        if (!isDragging || !isMobile()) return;
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        const deltaY = touch.clientY - touchStartY;
+        let newY = touchStartTranslateY + deltaY;
+        
+        // Clamp: don't go above full (0) or below closed
+        const snaps = getSnapPoints();
+        newY = Math.max(snaps.full - 20, Math.min(snaps.closed, newY));
+        
+        // Rubber band effect at top
+        if (newY < snaps.full) {
+            newY = snaps.full + (newY - snaps.full) * 0.3;
+        }
+        
+        // Calculate velocity
+        const now = Date.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) {
+            velocity = (touch.clientY - lastTouchY) / dt; // px/ms
+        }
+        lastTouchY = touch.clientY;
+        lastTouchTime = now;
+        
+        panel.style.transform = `translateY(${newY}px)`;
+    }
+    
+    function handleTouchEnd() {
+        if (!isDragging || !isMobile()) return;
+        isDragging = false;
+        panel.classList.remove('dragging');
+        
+        const transform = window.getComputedStyle(panel).transform;
+        let currentY = 0;
+        if (transform && transform !== 'none') {
+            const matrix = new DOMMatrixReadOnly(transform);
+            currentY = matrix.m42;
+        }
+        
+        const snaps = getSnapPoints();
+        const VELOCITY_THRESHOLD = 0.5; // px/ms
+        
+        // Velocity-based snapping
+        if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
+            if (velocity > 0) {
+                // Swiping DOWN
+                if (currentState === 'full') snapTo('half');
+                else if (currentState === 'half') snapTo('peek');
+                else {
+                    // From peek, swipe down = close
+                    store.setSelectedDevice(null);
+                    showingRoute = false;
+                    clearRoute();
+                }
+            } else {
+                // Swiping UP
+                if (currentState === 'peek') snapTo('half');
+                else if (currentState === 'half') snapTo('full');
+                else snapTo('full');
+            }
+            return;
+        }
+        
+        // Position-based snapping (find closest snap point)
+        const distances = [
+            { state: 'full', dist: Math.abs(currentY - snaps.full) },
+            { state: 'half', dist: Math.abs(currentY - snaps.half) },
+            { state: 'peek', dist: Math.abs(currentY - snaps.peek) }
+        ];
+        
+        // If dragged far enough down from peek, close it
+        if (currentY > snaps.peek + 60) {
+            store.setSelectedDevice(null);
+            showingRoute = false;
+            clearRoute();
+            return;
+        }
+        
+        distances.sort((a, b) => a.dist - b.dist);
+        snapTo(distances[0].state);
+    }
+    
+    // Attach touch events to drag handle and peek section
+    [dragHandle, sheetPeek].forEach(el => {
+        if (!el) return;
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: false });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    });
+
+    // ═══════════════════════════════════════════════
+    // ORIGINAL FUNCTIONALITY
+    // ═══════════════════════════════════════════════
+
     function updateRequestButtonState() {
         const lastRequest = parseInt(localStorage.getItem('lastPositionRequestTime') || '0', 10);
         const elapsed = Date.now() - lastRequest;
@@ -39,7 +223,7 @@ export function initDeviceDetail() {
             }
         } else {
             requestSingleBtn.disabled = false;
-            requestSingleBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Friss pozíció lekérése';
+            requestSingleBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Friss pozíció';
             lucide.createIcons();
             if (cooldownTimer) {
                 clearInterval(cooldownTimer);
@@ -83,8 +267,6 @@ export function initDeviceDetail() {
         
         const user = store.state.user;
         
-        // Permission check: ONLY admin can edit device avatar from the detail panel
-        // Regular users must use the Profile tab for their own device.
         if (!user.administrator) {
             if (window.showToast) {
                 window.showToast('Nincs jogosultságod módosítani az eszközképet itt.', 'warning');
@@ -106,7 +288,6 @@ export function initDeviceDetail() {
             
             await api.uploadDeviceImage(id, file);
             
-            // Refresh devices to get the new image
             const devices = await api.getDevices();
             if (devices) {
                 store.setDevices(devices);
@@ -114,10 +295,9 @@ export function initDeviceDetail() {
         } catch (err) {
             console.error('Error uploading avatar:', err);
             alert('Hiba történt a profilkép feltöltésekor!');
-            // Triggers a re-render from store to reset avatar state
             store.notify(); 
         } finally {
-            avatarUpload.value = ''; // Reset input
+            avatarUpload.value = '';
         }
     });
     
@@ -166,9 +346,9 @@ export function initDeviceDetail() {
                 replayBtn.innerHTML = '<i data-lucide="check"></i> Betöltve';
                 
                 // Hide panel on mobile to see the map
-                if (window.innerWidth <= 768) {
+                if (isMobile()) {
                     showingRoute = true;
-                    panel.classList.add('hidden');
+                    snapTo('closed');
                 }
             } else {
                 replayBtn.innerHTML = '<i data-lucide="info"></i> Nincs adat';
@@ -188,12 +368,22 @@ export function initDeviceDetail() {
         }
     });
     
+    // ═══════════════════════════════════════════════
+    // STORE SUBSCRIPTION
+    // ═══════════════════════════════════════════════
+    let lastDeviceId = null;
+    
     store.subscribe(async (state) => {
         const id = state.selectedDeviceId;
         if (!id) {
-            panel.classList.add('hidden');
+            if (isMobile()) {
+                snapTo('closed');
+            } else {
+                panel.classList.add('hidden');
+            }
             showingRoute = false;
             clearRoute();
+            lastDeviceId = null;
             return;
         }
         
@@ -206,7 +396,6 @@ export function initDeviceDetail() {
         if (device.attributes && device.attributes.deviceImage) {
             let imgUrl = device.attributes.deviceImage;
             if (!imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
-                // Remove leading slash if present
                 if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
                 imgUrl = `/api/${imgUrl}`;
             }
@@ -229,7 +418,6 @@ export function initDeviceDetail() {
             if (position.attributes && position.attributes.batteryLevel !== undefined) {
                 batteryEl.textContent = `${Math.round(position.attributes.batteryLevel)} %`;
             } else if (position.attributes && position.attributes.battery !== undefined) {
-                // Some devices send battery instead of batteryLevel
                 batteryEl.textContent = `${Math.round(position.attributes.battery)} %`;
             } else {
                 batteryEl.textContent = '- %';
@@ -239,7 +427,6 @@ export function initDeviceDetail() {
                 addressEl.textContent = position.address;
             } else {
                 addressEl.textContent = `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}`;
-                // Optionally trigger reverse geocoding via nominatim or similar if needed
             }
         } else {
             speedEl.textContent = '-';
@@ -251,9 +438,15 @@ export function initDeviceDetail() {
         // Populate extra info
         extraInfoEl.innerHTML = renderExtraInfo(device, position);
         
-        // Don't re-open the panel if we're in route-viewing mode on mobile
+        // Show panel (only if not in route-viewing mode)
         if (!showingRoute) {
-            panel.classList.remove('hidden');
+            const isNewDevice = id !== lastDeviceId;
+            if (isNewDevice) {
+                openSheet();
+                lastDeviceId = id;
+            } else if (!isMobile()) {
+                panel.classList.remove('hidden');
+            }
         }
     });
 
@@ -292,15 +485,14 @@ export function initDeviceDetail() {
         if (e.target === navModal) navModal.classList.add('hidden');
     });
 }
+
 function renderExtraInfo(device, position) {
     let rows = [];
     
-    // Device info
     if (device.model) rows.push({ label: 'Modell', val: device.model });
     if (device.phone) rows.push({ label: 'Telefonszám', val: device.phone });
     if (device.contact) rows.push({ label: 'Kapcsolat', val: device.contact });
     
-    // Position attributes
     if (position && position.attributes) {
         const attr = position.attributes;
         if (attr.totalDistance !== undefined) {

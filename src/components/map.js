@@ -1,10 +1,11 @@
-import store from '../store/state.js';
-import { getInitials } from '../utils/format.js';
+import store from '../store/state.js?v=5';
+import { getInitials } from '../utils/format.js?v=5';
 
 let map = null;
 let markerClusterGroup = null;
 let markers = {}; // deviceId -> leaflet marker
 let routeLayer = null; // Leaflet FeatureGroup for history
+let legendControl = null; // Speed legend control
 
 let followingDeviceId = null;
 let isUserDragging = false;
@@ -14,6 +15,10 @@ export function clearRoute() {
     if (routeLayer && map) {
         map.removeLayer(routeLayer);
         routeLayer = null;
+    }
+    if (legendControl && map) {
+        map.removeControl(legendControl);
+        legendControl = null;
     }
 }
 
@@ -119,6 +124,29 @@ export function drawRoute(positions) {
     
     routeLayer.addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+    
+    // ─── Speed Legend ───
+    if (legendControl) {
+        map.removeControl(legendControl);
+    }
+    const maxKmh = Math.round(maxSpeed * 1.852);
+    const SpeedLegend = L.Control.extend({
+        options: { position: 'bottomleft' },
+        onAdd: function() {
+            const div = L.DomUtil.create('div', 'speed-legend');
+            div.innerHTML = `
+                <div class="legend-gradient"></div>
+                <div class="legend-labels">
+                    <span>0 km/h</span>
+                    <span>${maxKmh} km/h</span>
+                </div>
+            `;
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        }
+    });
+    legendControl = new SpeedLegend();
+    legendControl.addTo(map);
 }
 
 export function initMap() {
