@@ -1,10 +1,10 @@
-import store from './store/state.js?v=11';
-import { api } from './api/traccar.js?v=11';
-import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=11';
-import { initLogin } from './components/login.js?v=11';
-import { initMap } from './components/map.js?v=11';
-import { initSidebar } from './components/sidebar.js?v=11';
-import { initDeviceDetail } from './components/deviceDetail.js?v=11';
+import store from './store/state.js?v=12';
+import { api } from './api/traccar.js?v=12';
+import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=12';
+import { initLogin } from './components/login.js?v=12';
+import { initMap } from './components/map.js?v=12';
+import { initSidebar } from './components/sidebar.js?v=12';
+import { initDeviceDetail } from './components/deviceDetail.js?v=12';
 
 // DOM Elements
 const loginView = document.getElementById('login-view');
@@ -190,7 +190,7 @@ async function initializeApp() {
         if (myDevice) {
             const pos = store.state.positions[myDevice.id];
             if (pos) {
-                import('./components/map.js?v=11').then(module => {
+                import('./components/map.js?v=12').then(module => {
                     module.flyToLocation(pos.latitude, pos.longitude, 16);
                 });
             } else {
@@ -218,10 +218,7 @@ async function onLoginSuccess(user) {
     store.setUser(user);
     showMainView();
     
-    // Request Notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
+    // Removed automatic Notification.requestPermission() to prevent startup crashes.
     
     try {
         // Fetch initial data
@@ -270,14 +267,27 @@ export function showToast(message, type = 'info') {
     if (!container) return;
     
     // Create browser notification if permitted
-    if ('Notification' in window && Notification.permission === 'granted') {
-        // Avoid duplicate notifications by checking active document state
-        if (document.visibilityState === 'hidden' || type !== 'info') {
-            new Notification('Traccar+', {
-                body: message,
-                icon: '/favicon.ico' // Or any suitable icon
-            });
+    try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            // Avoid duplicate notifications by checking active document state
+            if (document.visibilityState === 'hidden' || type !== 'info') {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification('Traccar+', {
+                            body: message,
+                            icon: '/icons/icon.svg'
+                        });
+                    }).catch(function() {
+                        // Fallback for non-PWA context
+                        new Notification('Traccar+', { body: message, icon: '/icons/icon.svg' });
+                    });
+                } else {
+                    new Notification('Traccar+', { body: message, icon: '/icons/icon.svg' });
+                }
+            }
         }
+    } catch (err) {
+        console.warn('Failed to show native notification', err);
     }
     
     const toast = document.createElement('div');

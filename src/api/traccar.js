@@ -1,4 +1,4 @@
-import store from '../store/state.js?v=11';
+import store from '../store/state.js?v=12';
 
 const BASE_URL = '/api';
 
