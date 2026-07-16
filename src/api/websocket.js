@@ -1,4 +1,4 @@
-import store from '../store/state.js?v=8';
+import store from '../store/state.js?v=10';
 
 let socket = null;
 let reconnectTimer = null;
