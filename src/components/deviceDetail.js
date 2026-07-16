@@ -92,83 +92,81 @@ export function initDeviceDetail() {
         }
     }
     
-    // Touch events on drag handle AND peek section
-    function handleTouchStart(e) {
+    // Pointer events on drag handle AND peek section
+    function handlePointerDown(e) {
         if (!isMobile()) return;
+        // Only handle primary button (left click or touch)
+        if (e.button !== 0 && e.type !== 'touchstart') return;
+        
         isDragging = true;
-        const touch = e.touches[0];
-        touchStartY = touch.clientY;
-        lastTouchY = touch.clientY;
+        touchStartY = e.clientY || (e.touches && e.touches[0].clientY);
+        lastTouchY = touchStartY;
         lastTouchTime = Date.now();
         velocity = 0;
         
-        // Use our explicitly tracked value, or default to peek if unset
         if (!currentTranslateY) {
             currentTranslateY = getSnapPoints()[currentState] || getSnapPoints().peek;
         }
         touchStartTranslateY = currentTranslateY;
         
         panel.classList.add('dragging');
+        if (e.pointerId !== undefined) {
+            e.target.setPointerCapture(e.pointerId);
+        }
     }
     
-    function handleTouchMove(e) {
+    function handlePointerMove(e) {
         if (!isDragging || !isMobile()) return;
         
-        // Prevent default scrolling only if we are moving vertically
-        const touch = e.touches[0];
-        const deltaY = touch.clientY - touchStartY;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const deltaY = clientY - touchStartY;
         
-        // Only prevent default if it's a clear vertical drag
-        if (Math.abs(deltaY) > 5) {
+        if (Math.abs(deltaY) > 5 && e.cancelable) {
             e.preventDefault();
         }
         
         let newY = touchStartTranslateY + deltaY;
         
-        // Clamp: don't go above full (0) or below closed
         const snaps = getSnapPoints();
         newY = Math.max(snaps.full - 20, Math.min(snaps.closed, newY));
         
-        // Rubber band effect at top
         if (newY < snaps.full) {
             newY = snaps.full + (newY - snaps.full) * 0.3;
         }
         
-        // Calculate velocity
         const now = Date.now();
         const dt = now - lastTouchTime;
         if (dt > 0) {
-            velocity = (touch.clientY - lastTouchY) / dt; // px/ms
+            velocity = (clientY - lastTouchY) / dt;
         }
-        lastTouchY = touch.clientY;
+        lastTouchY = clientY;
         lastTouchTime = now;
         
         currentTranslateY = newY;
         panel.style.transform = `translateY(${newY}px)`;
     }
     
-    function handleTouchEnd() {
+    function handlePointerUp(e) {
         if (!isDragging || !isMobile()) return;
         isDragging = false;
         panel.classList.remove('dragging');
+        if (e.pointerId !== undefined) {
+            e.target.releasePointerCapture(e.pointerId);
+        }
         
         const snaps = getSnapPoints();
-        const VELOCITY_THRESHOLD = 0.5; // px/ms
+        const VELOCITY_THRESHOLD = 0.5;
         
-        // Velocity-based snapping
         if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
             if (velocity > 0) {
-                // Swiping DOWN
                 if (currentState === 'full') snapTo('half');
                 else if (currentState === 'half') snapTo('peek');
                 else {
-                    // From peek, swipe down = close
                     store.setSelectedDevice(null);
                     showingRoute = false;
                     clearRoute();
                 }
             } else {
-                // Swiping UP
                 if (currentState === 'peek') snapTo('half');
                 else if (currentState === 'half') snapTo('full');
                 else snapTo('full');
@@ -176,14 +174,12 @@ export function initDeviceDetail() {
             return;
         }
         
-        // Position-based snapping (find closest snap point)
         const distances = [
             { state: 'full', dist: Math.abs(currentTranslateY - snaps.full) },
             { state: 'half', dist: Math.abs(currentTranslateY - snaps.half) },
             { state: 'peek', dist: Math.abs(currentTranslateY - snaps.peek) }
         ];
         
-        // If dragged far enough down from peek, close it
         if (currentTranslateY > snaps.peek + 60) {
             store.setSelectedDevice(null);
             showingRoute = false;
@@ -195,12 +191,22 @@ export function initDeviceDetail() {
         snapTo(distances[0].state);
     }
     
-    // Attach touch events to drag handle and peek section
+    // Attach events to drag handle and peek section
     [dragHandle, sheetPeek].forEach(el => {
         if (!el) return;
-        el.addEventListener('touchstart', handleTouchStart, { passive: true });
-        el.addEventListener('touchmove', handleTouchMove, { passive: false });
-        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+        // Use pointer events for mouse + touch support
+        if (window.PointerEvent) {
+            el.addEventListener('pointerdown', handlePointerDown, { passive: true });
+            el.addEventListener('pointermove', handlePointerMove, { passive: false });
+            el.addEventListener('pointerup', handlePointerUp, { passive: true });
+            el.addEventListener('pointercancel', handlePointerUp, { passive: true });
+        } else {
+            // Fallback for older Safari
+            el.addEventListener('touchstart', handlePointerDown, { passive: true });
+            el.addEventListener('touchmove', handlePointerMove, { passive: false });
+            el.addEventListener('touchend', handlePointerUp, { passive: true });
+            el.addEventListener('touchcancel', handlePointerUp, { passive: true });
+        }
     });
 
     // ═══════════════════════════════════════════════
