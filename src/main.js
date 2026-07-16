@@ -218,9 +218,16 @@ async function onLoginSuccess(user) {
     store.setUser(user);
     showMainView();
     
-    // Request Notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+    // Request Notification permission safely (iOS Safari throws if not user-initiated)
+    try {
+        if ('Notification' in window && Notification.permission === 'default') {
+            const promise = Notification.requestPermission();
+            if (promise) {
+                promise.catch(e => console.warn('Notification permission denied or failed', e));
+            }
+        }
+    } catch (e) {
+        console.warn('Could not request notification permission:', e);
     }
     
     try {
