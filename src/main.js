@@ -1,10 +1,10 @@
-import store from './store/state.js?v=10';
-import { api } from './api/traccar.js?v=10';
-import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=10';
-import { initLogin } from './components/login.js?v=10';
-import { initMap } from './components/map.js?v=10';
-import { initSidebar } from './components/sidebar.js?v=10';
-import { initDeviceDetail } from './components/deviceDetail.js?v=10';
+import store from './store/state.js?v=11';
+import { api } from './api/traccar.js?v=11';
+import { connectWebSocket, disconnectWebSocket } from './api/websocket.js?v=11';
+import { initLogin } from './components/login.js?v=11';
+import { initMap } from './components/map.js?v=11';
+import { initSidebar } from './components/sidebar.js?v=11';
+import { initDeviceDetail } from './components/deviceDetail.js?v=11';
 
 // DOM Elements
 const loginView = document.getElementById('login-view');
@@ -190,7 +190,7 @@ async function initializeApp() {
         if (myDevice) {
             const pos = store.state.positions[myDevice.id];
             if (pos) {
-                import('./components/map.js?v=10').then(module => {
+                import('./components/map.js?v=11').then(module => {
                     module.flyToLocation(pos.latitude, pos.longitude, 16);
                 });
             } else {
@@ -218,16 +218,9 @@ async function onLoginSuccess(user) {
     store.setUser(user);
     showMainView();
     
-    // Request Notification permission safely (iOS Safari throws if not user-initiated)
-    try {
-        if ('Notification' in window && Notification.permission === 'default') {
-            const promise = Notification.requestPermission();
-            if (promise) {
-                promise.catch(e => console.warn('Notification permission denied or failed', e));
-            }
-        }
-    } catch (e) {
-        console.warn('Could not request notification permission:', e);
+    // Request Notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
     }
     
     try {

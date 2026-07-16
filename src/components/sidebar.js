@@ -1,5 +1,5 @@
-import store from '../store/state.js?v=10';
-import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=10';
+import store from '../store/state.js?v=11';
+import { getInitials, formatSpeed, formatTimeAgo, getDeviceStatus } from '../utils/format.js?v=11';
 
 export function initSidebar() {
     const listEl = document.getElementById('device-list');

@@ -1,4 +1,4 @@
-import { api } from '../api/traccar.js?v=10';
+import { api } from '../api/traccar.js?v=11';
 
 export function initLogin(onSuccess) {
     const loginForm = document.getElementById('login-form');

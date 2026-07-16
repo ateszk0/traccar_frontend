@@ -27,10 +27,25 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <!-- App CSS -->
-    <link rel="stylesheet" href="src/style.css?v=10">
+    <link rel="stylesheet" href="src/style.css?v=11">
 </head>
 
 <body>
+    <!-- Failsafe Error Display for Debugging -->
+    <div id="global-error-display" style="display:none; position:fixed; top:0; left:0; width:100%; background:red; color:white; z-index:999999; padding:20px; font-size:12px; font-family:monospace; word-break:break-all;"></div>
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            var el = document.getElementById('global-error-display');
+            el.style.display = 'block';
+            el.innerHTML += 'ERROR: ' + msg + '<br>URL: ' + url + '<br>Line: ' + lineNo + '<br>Col: ' + columnNo + '<br>Trace: ' + (error ? error.stack : '') + '<hr>';
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function(event) {
+            var el = document.getElementById('global-error-display');
+            el.style.display = 'block';
+            el.innerHTML += 'PROMISE REJECTION: ' + (event.reason ? (event.reason.stack || event.reason) : event) + '<hr>';
+        });
+    </script>
     <div id="app">
         <!-- Login View -->
         <div id="login-view" class="view hidden">
